@@ -1,4 +1,5 @@
--- RFM Analysis
+/* RFM Analysis */
+-- Objective: Calculating RFM score and segmenting customers based on the scores.
 
 -- 1. Calculate RFM values
 WITH customer_rfm as(
@@ -62,6 +63,7 @@ rfm_segments AS (
         rfm_scores
 )
 
+-- 4. Final table
 SELECT
     customer_id,
     recency,
@@ -76,3 +78,34 @@ FROM
     rfm_segments
 ORDER BY
     RFM_Score DESC;
+
+
+/* Monthly Repeat Purchases */
+-- Objective: Find customers with more than 1 transaction in a month
+
+EXPLAIN
+-- 1. Orders per month
+WITH monthly_orders AS (
+  SELECT
+    customer_id,
+    EXTRACT(MONTH FROM order_date) AS order_month,
+    COUNT(order_id) AS orders_per_month
+  FROM public.transaction
+  GROUP BY customer_id, order_month
+),
+
+repeat_purchases AS (
+-- 2. Filter orders where orders per month is at least 2
+  SELECT *
+  FROM monthly_orders
+  WHERE orders_per_month >= 2
+)
+
+-- 3. Customers with orders >=2 in a month (Final table)
+SELECT
+  order_month,
+  COUNT(DISTINCT customer_id) AS repeat_customers
+FROM repeat_purchases
+GROUP BY order_month
+ORDER BY order_month;
+
